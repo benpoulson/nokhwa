@@ -3,7 +3,7 @@ use crate::{error::NokhwaError, pixel_format::FormatDecoder};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Borrow,
-    cmp::Ordering,
+    cmp::{Ordering, min, max},
     fmt::{Display, Formatter},
     str::FromStr,
 };
@@ -1633,13 +1633,13 @@ pub fn buf_yuyv422_to_rgb(data: &[u8], dest: &mut [u8], rgba: bool) -> Result<()
 #[must_use]
 #[inline]
 pub fn yuyv444_to_rgb(y: i32, u: i32, v: i32) -> [u8; 3] {
-    let c298 = (y - 16) * 298;
-    let d = u - 128;
-    let e = v - 128;
-    let r = ((c298 + 409 * e + 128) >> 8) as u8;
-    let g = ((c298 - 100 * d - 208 * e + 128) >> 8) as u8;
-    let b = ((c298 + 516 * d + 128) >> 8) as u8;
-    [r, g, b]
+    let nY = max(0, y - 16);
+    let nU = u - 128;
+    let nV = v - 128;
+    let nR = (min(262143, max(0, 1192 * nY + 1634 * nV)) >> 10) & 0xFF;
+    let nG = (min(262143, max(0, (1192 * nY - 833 * nV - 400 * nU))) >> 10) & 0xFF;
+    let nB = (min(262143, max(0, (1192 * nY + 2066 * nU))) >> 10) & 0xFF;
+    [nR as u8, nG as u8, nB as u8]
 }
 
 // equation from https://en.wikipedia.org/wiki/YUV#Converting_between_Y%E2%80%B2UV_and_RGB
